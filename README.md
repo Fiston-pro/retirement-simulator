@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZUS Pension Simulator (Hackathon MVP)
 
-## Getting Started
+Educational web tool to raise public awareness of social insurance and future pension benefits.
+Built with **Next.js 13 App Router**, **Tailwind CSS**, **Framer Motion**, **Recharts**, and **jsPDF**.
 
-First, run the development server:
+---
+
+## ✨ Features
+
+- **Landing page**: Introduces the simulator, user enters desired pension and sees quick comparisons with average benefits.
+- **Forecast page**: Collects required inputs (age, sex, salary, start/end years, optional funds, sick-leave toggle).
+- **Result dashboard**: Modern, animated dashboard with:
+  - Nominal & inflation-adjusted pension amounts (PLN).
+  - Replacement rate (pension ÷ last salary).
+  - Salary vs. pension chart across career.
+  - “Retire later” scenarios (+8% per year).
+  - “Did you know?” facts (deterministic to avoid hydration mismatch).
+  - Downloadable PDF report.
+- **Admin page**: Shows logged simulation usage and exports to `.xls` (date, time, age, sex, salary, expected & actual pension, etc.).
+
+---
+
+## 🛠️ Tech Stack
+
+- **Next.js 13** (App Router)
+- **React** + **Framer Motion** (animations)
+- **Tailwind CSS** (styling)
+- **Recharts** (data visualization)
+- **jsPDF** + **jspdf-autotable** (report generation)
+- Local logging with `sessionStorage` for demo (replace with API/DB for production).
+
+---
+
+## ♿ Accessibility (WCAG 2.0)
+
+- Skip link to main content.
+- Visible focus ring for keyboard users.
+- Deterministic animations with “reduce motion” support.
+- Proper headings, labels, and ARIA landmarks.
+- Color palette based on ZUS brand, checked for AA contrast.
+
+---
+
+## 🚀 Getting Started
 
 ```bash
+# install dependencies
+npm install
+
+# run locally
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# build production
+npm run build && npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📂 Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+app/
+  layout.tsx          # global layout, SkipLink + <main>
+  page.tsx            # landing
+  forecast/page.tsx   # inputs page
+  result/page.tsx     # dashboard with charts, logging, PDF link
+  report/page.tsx     # PDF generator
+  admin/page.tsx      # usage log view + export
+components/
+  a11y/WCAGKit.tsx    # accessibility helpers (SkipLink, VisuallyHidden, focusRing)
+lib/
+  usage.ts            # logSimulation, readLogs, clearLogs helpers
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📜 Notes
 
-## Learn More
+- All start & end years refer to January.
 
-To learn more about Next.js, take a look at the following resources:
+- Replace mock assumptions with official ZUS / GUS / NBP data for production.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- This MVP logs to browser storage only. In production, integrate with a backend.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📝 License
+MIT
