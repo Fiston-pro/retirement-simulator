@@ -9,7 +9,7 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 
-export const metadata: Metadata = { title: "Pension Simulator", description: "Educational tool for future pensions (ZUS)" };
+export const metadata: Metadata = { title: "My Future", description: "Educational tool for future pensions (ZUS)" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

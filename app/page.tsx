@@ -74,12 +74,39 @@ export default function BasicDashboardPage() {
 
   return (
     <div className="grid gap-4 sm:gap-6">
+      
       {/* Context + input */}
       <section
-        className="rounded-3xl p-5 sm:p-6 text-white"
+        className="rounded-3xl p-5 sm:p-6 text-white pb-6"
         style={{ background: "linear-gradient(135deg,#3F84D2,#00993F)" }}
         aria-labelledby="dash-title"
       >
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
+          <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2 py-1">
+            🤝 <span className="opacity-90">Invite friends</span>
+          </span>
+          <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2 py-1">
+            🎮 <span className="opacity-90">Daily challenges</span>
+          </span>
+          <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2 py-1">
+            🏆 <span className="opacity-90">Unlock badges</span>
+          </span>
+          <span className="inline-flex items-center gap-1 bg-white/15 rounded-full px-2 py-1">
+            💬 <span className="opacity-90">AI helper</span>
+          </span>
+        </div>
+
+        <div className="flex gap-2 sm:ml-auto">
+          <a
+            href="/profile"
+            className={`text-xs sm:text-sm px-3 py-1.5 rounded-2xl bg-white text-[#00416E] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90`}
+          >
+            Create a Squad
+          </a>
+        </div>
+      </div>
+
         <h1 id="dash-title" className="text-xl sm:text-2xl font-semibold">
           What monthly pension would you like to have?
         </h1>

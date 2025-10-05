@@ -1,286 +1,164 @@
+// app/profile/page.tsx
 "use client";
 
 import React from "react";
 import { focusRing } from "@/components/a11y/WCAGKit";
 import { useUserCtx } from "@/lib/userCtx";
-import { loginAnon, loginGoogle, db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { serverTimestamp, setDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-export const dynamic = "force-dynamic";
+const fakeChallenges = [
+  { id: "coffee", label: "Skip Coffee", amount: 15, icon: "☕" },
+  { id: "netflix", label: "Pause Netflix", amount: 50, icon: "🎬" },
+  { id: "bike", label: "Bike to Work", amount: 20, icon: "🚴" },
+];
 
-type Goals = {
-  monthlySave?: number;
-  netflix?: boolean;
-  coffee?: boolean;
-  smoking?: boolean;
-  customNote?: string;
-  updatedAt?: any;
-};
+const fakeFriends = [
+  { id: "1", name: "Anna", avatar: "https://i.pravatar.cc/40?img=1" },
+  { id: "2", name: "Kuba", avatar: "https://i.pravatar.cc/40?img=2" },
+  { id: "3", name: "Marek", avatar: "https://i.pravatar.cc/40?img=3" },
+];
 
 export default function ProfilePage() {
-  const { user, profile, saveProfile } = useUserCtx();
+  const { user, profile } = useUserCtx();
+  const [fund, setFund] = React.useState(0);
+  const [badges, setBadges] = React.useState<string[]>([]);
 
-  // ----- PROFILE FORM -----
-  const [form, setForm] = React.useState({
-    name: "",
-    birthYear: "",
-    salary: "",
-    desired: "",
-    postal: "",
-  } as Record<string, string | number>);
-  const [savedMsg, setSavedMsg] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setForm({
-      name: profile?.name || "",
-      birthYear: profile?.birthYear?.toString() || "",
-      salary: profile?.salary?.toString() || "",
-      desired: profile?.desired?.toString() || "",
-      postal: profile?.postal || "",
-    });
-  }, [profile?.name, profile?.birthYear, profile?.salary, profile?.desired, profile?.postal]);
-
-  async function onSave(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-    await saveProfile({
-      name: String(form.name || "").trim() || undefined,
-      birthYear: form.birthYear ? Number(form.birthYear) : undefined,
-      salary: form.salary ? Number(form.salary) : undefined,
-      desired: form.desired ? Number(form.desired) : undefined,
-      postal: String(form.postal || "").trim() || undefined,
-    });
-    setSavedMsg("Profile saved ✅");
-    setTimeout(() => setSavedMsg(null), 2000);
+  function addChallenge(c: typeof fakeChallenges[number]) {
+    const newFund = fund + c.amount;
+    setFund(newFund);
+    // unlock badges based on total
+    const newBadges: string[] = [];
+    if (newFund >= 50) newBadges.push("🥉");
+    if (newFund >= 200) newBadges.push("🥈");
+    if (newFund >= 500) newBadges.push("🥇");
+    if (newFund >= 1000) newBadges.push("🏆");
+    setBadges(newBadges);
   }
 
-  // ----- GOALS / GAMIFY (cloud) -----
-  const [goals, setGoals] = React.useState<Goals | null>(null);
-  const [goalsMsg, setGoalsMsg] = React.useState<string | null>(null);
+  const [name, setName] = React.useState(profile?.name || "");
+  const [birthYear, setBirthYear] = React.useState(profile?.birthYear || "");
+  const [salary, setSalary] = React.useState(profile?.salary || "");
 
-  React.useEffect(() => {
-    (async () => {
-      if (!user) { setGoals(null); return; }
-      const snap = await getDoc(doc(db, "users", user.uid, "meta", "goals"));
-      setGoals((snap.exists() ? (snap.data() as Goals) : { monthlySave: 0, netflix: false, coffee: false, smoking: false, customNote: "" }));
-    })();
-  }, [user?.uid]);
-
-  async function saveGoals(partial: Partial<Goals>) {
+  async function saveProfile() {
     if (!user) return;
-    const next = { ...(goals || {}), ...partial, updatedAt: serverTimestamp() };
-    await setDoc(doc(db, "users", user.uid, "meta", "goals"), next, { merge: true });
-    setGoals({ ...next, updatedAt: new Date() } as any);
-    setGoalsMsg("Goals saved ✅");
-    setTimeout(() => setGoalsMsg(null), 1500);
+    await setDoc(
+      doc(db, "users", user.uid),
+      {
+        name,
+        birthYear: Number(birthYear) || null,
+        salary: Number(salary) || null,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    alert("Profile updated!");
   }
-
-  const monthlyFromToggles =
-    (goals?.netflix ? 29 : 0) + (goals?.coffee ? 120 : 0) + (goals?.smoking ? 500 : 0);
-  const monthlyTotal = (goals?.monthlySave || 0) + monthlyFromToggles;
-
-  // A tiny projection: “what could this add at retirement?”
-  const nowYear = new Date().getFullYear();
-  const yearsToRet =
-    (profile?.birthYear ? Math.max(0, (profile.birthYear + 65) - nowYear) : 25); // rough guess
-  const realReturn = 0.03; // 3% real
-  const annuityYears = 20; // draw period
-  const futurePot = monthlyTotal * (((1 + realReturn) ** (yearsToRet) - 1) / realReturn); // future value of series
-  const monthlyAddAtRet = (futurePot / (annuityYears * 12)) || 0;
 
   return (
-    <div className="grid gap-4 sm:gap-6">
-      {/* Header card */}
-      <section className="rounded-3xl p-5 sm:p-6 text-white shadow-sm" style={{ background: "linear-gradient(135deg,#00416E,#3F84D2)" }}>
-        <h1 className="text-xl sm:text-2xl font-semibold">Your profile</h1>
-        <p className="text-white/90 text-sm sm:text-base mt-1">Edit your details to personalize the simulator and assistant.</p>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
 
-        {!user ? (
-          <div className="mt-4 flex flex-col sm:flex-row gap-2">
-            <button onClick={loginAnon} className={`px-4 py-2 rounded-2xl bg-white/20 ${focusRing}`}>Continue as guest (Anonymous)</button>
-            <button onClick={loginGoogle} className={`px-4 py-2 rounded-2xl bg-white text-[#00416E] font-medium ${focusRing}`}>Sign in with Google</button>
-          </div>
-        ) : (
-          <p className="mt-3 text-xs sm:text-sm">
-            Signed in as <strong>{user.isAnonymous ? "Anonymous" : user.displayName || user.email}</strong>
-          </p>
+<section className="bg-white rounded-3xl p-6 shadow-sm">
+  <h2 className="text-lg font-semibold mb-2">Your Info</h2>
+  <div className="grid sm:grid-cols-3 gap-3">
+    <input
+      className={`p-2 border rounded ${focusRing}`}
+      placeholder="Name"
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+    />
+    <input
+      className={`p-2 border rounded ${focusRing}`}
+      placeholder="Birth year"
+      value={birthYear}
+      onChange={(e) => setBirthYear(e.target.value)}
+    />
+    <input
+      className={`p-2 border rounded ${focusRing}`}
+      placeholder="Gross salary PLN"
+      value={salary}
+      onChange={(e) => setSalary(e.target.value)}
+    />
+  </div>
+  <button
+    onClick={saveProfile}
+    className={`mt-3 px-4 py-2 rounded-2xl bg-[#00993F] text-white ${focusRing}`}
+  >
+    Save profile
+  </button>
+</section>
+
+
+      <section
+        className="rounded-3xl p-6 text-white"
+        style={{ background: "linear-gradient(135deg,#3F84D2,#00993F)" }}
+      >
+        <h1 className="text-2xl font-semibold">Your Profile</h1>
+        <p className="text-white/90">
+          {user ? `Hi ${profile?.name || user.email}!` : "You’re browsing as guest."}
+        </p>
+      </section>
+
+      {/* Progress */}
+      <section className="bg-white rounded-3xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-2">Your Future Fund</h2>
+        <div className="text-2xl font-bold">{fund} PLN saved</div>
+        <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+          <div
+            className="bg-[#3F84D2] h-3 rounded-full"
+            style={{ width: `${Math.min(100, (fund / 1000) * 100)}%` }}
+          ></div>
+        </div>
+        {badges.length > 0 && (
+          <div className="mt-2 flex gap-2 text-2xl">{badges.map((b, i) => <span key={i}>{b}</span>)}</div>
         )}
       </section>
 
-      {/* Profile form */}
-      <section className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Personal details</h2>
-        <p className="text-sm text-gray-600">Saved securely in the cloud.</p>
-
-        <form onSubmit={onSave} className="grid gap-3 mt-3 max-w-xl">
-          <Field label="Full name">
-            <input
-              disabled={!user}
-              className={`p-2 border rounded ${focusRing} w-full`}
-              placeholder="Jan Kowalski"
-              value={String(form.name ?? "")}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            />
-          </Field>
-
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Year of birth">
-              <input
-                disabled={!user}
-                type="number"
-                className={`p-2 border rounded ${focusRing} w-full`}
-                placeholder="1992"
-                min={1940}
-                max={new Date().getFullYear()}
-                value={String(form.birthYear ?? "")}
-                onChange={(e) => setForm((f) => ({ ...f, birthYear: e.target.value }))}
-              />
-            </Field>
-            <Field label="Postal code">
-              <input
-                disabled={!user}
-                className={`p-2 border rounded ${focusRing} w-full`}
-                placeholder="00-001"
-                value={String(form.postal ?? "")}
-                onChange={(e) => setForm((f) => ({ ...f, postal: e.target.value }))}
-              />
-            </Field>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Gross salary (PLN / month)">
-              <input
-                disabled={!user}
-                type="number"
-                min={0}
-                className={`p-2 border rounded ${focusRing} w-full`}
-                placeholder="7000"
-                value={String(form.salary ?? "")}
-                onChange={(e) => setForm((f) => ({ ...f, salary: e.target.value }))}
-              />
-            </Field>
-            <Field label="Desired pension (PLN / month)">
-              <input
-                disabled={!user}
-                type="number"
-                min={0}
-                className={`p-2 border rounded ${focusRing} w-full`}
-                placeholder="4500"
-                value={String(form.desired ?? "")}
-                onChange={(e) => setForm((f) => ({ ...f, desired: e.target.value }))}
-              />
-            </Field>
-          </div>
-
-          <div className="flex gap-2 pt-2">
+      {/* Challenges */}
+      <section className="bg-white rounded-3xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Daily / Monthly Challenges</h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {fakeChallenges.map((c) => (
             <button
-              type="submit"
-              disabled={!user}
-              className={`px-4 py-2 rounded-2xl bg-[#00993F] text-white ${focusRing} disabled:opacity-50`}
-              aria-disabled={!user}
-              title={user ? "Save to cloud" : "Sign in to save"}
+              key={c.id}
+              onClick={() => addChallenge(c)}
+              className={`flex flex-col items-center gap-2 border rounded-2xl p-4 hover:bg-gray-50 ${focusRing}`}
             >
-              Save changes
+              <div className="text-3xl">{c.icon}</div>
+              <div className="font-medium">{c.label}</div>
+              <div className="text-sm text-gray-500">+{c.amount} PLN</div>
             </button>
-            {savedMsg && <span className="text-xs text-green-700 self-center">{savedMsg}</span>}
-          </div>
-        </form>
+          ))}
+        </div>
       </section>
 
-      {/* Goals & Gamify */}
-      <section className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Goals & gamify</h2>
-        <p className="text-sm text-gray-600">Small recurring steps that can boost your pension.</p>
-
-        <div className="grid sm:grid-cols-2 gap-3 mt-3">
-          <Field label="Monthly savings (PLN)">
-            <input
-              disabled={!user}
-              type="number"
-              min={0}
-              className={`p-2 border rounded ${focusRing} w-full`}
-              placeholder="100"
-              value={goals?.monthlySave ?? ""}
-              onChange={(e) => saveGoals({ monthlySave: e.target.value ? Number(e.target.value) : 0 })}
-            />
-          </Field>
-
-          <Field label="Custom note (optional)">
-            <input
-              disabled={!user}
-              className={`p-2 border rounded ${focusRing} w-full`}
-              placeholder="Quit rideshares on weekdays"
-              value={goals?.customNote ?? ""}
-              onChange={(e) => saveGoals({ customNote: e.target.value })}
-            />
-          </Field>
+      {/* Friends */}
+      <section className="bg-white rounded-3xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Your Friends</h2>
+        <div className="flex flex-wrap gap-4">
+          {fakeFriends.map((f) => (
+            <div
+              key={f.id}
+              className="flex flex-col items-center gap-1 border rounded-2xl p-3 w-24 hover:bg-gray-50"
+            >
+              <img src={f.avatar} alt="" className="w-10 h-10 rounded-full" />
+              <div className="text-sm font-medium">{f.name}</div>
+              <button
+                className={`text-xs px-2 py-1 rounded bg-[#FFB34F] text-[#001B2E] ${focusRing}`}
+              >
+                Challenge
+              </button>
+            </div>
+          ))}
         </div>
-
-        <ul className="grid gap-2 text-sm mt-3" role="list">
-          <li className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Quit Netflix month</div>
-              <div className="text-xs text-gray-600">“Trade 2h streaming for a stronger future.”</div>
-            </div>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                disabled={!user}
-                checked={!!goals?.netflix}
-                onChange={(e) => saveGoals({ netflix: e.target.checked })}
-              />
-              <span>+29 PLN</span>
-            </label>
-          </li>
-          <li className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Skip daily coffee</div>
-              <div className="text-xs text-gray-600">“Brew at home, boost your pension.”</div>
-            </div>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                disabled={!user}
-                checked={!!goals?.coffee}
-                onChange={(e) => saveGoals({ coffee: e.target.checked })}
-              />
-              <span>+120 PLN</span>
-            </label>
-          </li>
-          <li className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">No smoking budget</div>
-              <div className="text-xs text-gray-600">“Quit a pack, fund your future.”</div>
-            </div>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                disabled={!user}
-                checked={!!goals?.smoking}
-                onChange={(e) => saveGoals({ smoking: e.target.checked })}
-              />
-              <span>+500 PLN</span>
-            </label>
-          </li>
-        </ul>
-
-        <div className="mt-3 grid sm:grid-cols-3 gap-2 text-sm">
-          <div className="rounded-xl px-3 py-2 bg-[#F1F5F9]">Monthly total: <strong>{monthlyTotal} PLN</strong></div>
-          <div className="rounded-xl px-3 py-2 bg-[#F1F5F9]">Years to retirement (rough): <strong>{yearsToRet}</strong></div>
-          <div className="rounded-xl px-3 py-2 bg-[#E7F6EE]">Potential extra at retirement: <strong>{Math.round(monthlyAddAtRet)} PLN/m</strong></div>
+        <div className="mt-4">
+          <button
+            className={`px-4 py-2 rounded-2xl bg-[#00993F] text-white ${focusRing}`}
+          >
+            Invite Friends
+          </button>
         </div>
-
-        {goalsMsg && <div className="mt-2 text-xs text-green-700">{goalsMsg}</div>}
       </section>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="grid gap-1">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-    </label>
   );
 }

@@ -145,7 +145,7 @@ export default function SimulatePage() {
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold">Pension simulator</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold">My Future</h1>
             <p className="text-white/90 text-sm sm:text-base">
               Set your goal and explore basic vs. advanced scenarios.
             </p>

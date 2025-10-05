@@ -53,7 +53,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
         <button onClick={() => router.push("/")} className={`flex items-center gap-2 ${focusRing}`} aria-label="Home">
           <Image src="/brand/logo.png" alt="Pension Simulator logo" width={32} height={32} className="rounded-lg bg-white" priority />
-          <span className="font-semibold">Pension Simulator</span>
+          <span className="font-semibold">MY FUTURE</span>
         </button>
 
         <nav aria-label="Primary" className="hidden md:flex items-center gap-1">
