@@ -1,33 +1,28 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import type { Metadata } from "next";
+import { Header, AssistantWidget, pageGradient } from "@/components/site/ui";
+import { SkipLink } from "@/components/a11y/WCAGKit";
+import { UserProvider } from "@/lib/userCtx";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
-export const metadata: Metadata = {
-  title: "Retirement Simulator",
-  description: "Let's show u how retirement looks like",
-};
+export const metadata: Metadata = { title: "Pension Simulator", description: "Educational tool for future pensions (ZUS)" };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="pl">
+      <body className={`min-h-dvh ${pageGradient} text-[#001B2E]`}>
+        <SkipLink />
+        <UserProvider>
+          <Header />
+          <main id="main" role="main" className="max-w-7xl mx-auto w-full px-4 sm:px-6 pt-4 pb-20">
+            {children}
+          </main>
+          <AssistantWidget />
+        </UserProvider>
       </body>
     </html>
   );

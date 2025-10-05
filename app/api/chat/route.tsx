@@ -1,41 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-
-export const runtime = "edge"; // fast & cheap
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const { messages, userContext } = await req.json();
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ reply: "(Server) OPENAI_API_KEY not set. Add it in Vercel → Settings → Environment Variables." }, { status: 200 });
-    }
+    if (!apiKey) return NextResponse.json({ reply: "(Server) OPENAI_API_KEY not set. Add it in Vercel." }, { status: 200 });
+
+    const contextLine = userContext
+      ? `User context: ${JSON.stringify(userContext)}. Use this to tailor guidance (e.g., refer to user's salary/desired pension succinctly).`
+      : "No user context provided.";
 
     const payload = {
-      model: "gpt-4o-mini", // lightweight, good enough for hints
+      model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a friendly Polish/English retirement planning assistant. Be practical, explain replacement rate simply, and focus on actions users can take in Poland (ZUS, IKE/IKZE, delaying retirement). Keep answers concise." },
+        {
+          role: "system",
+          content:
+            "You are a concise PL/EN retirement assistant. Short paragraphs, up to 5 bullets. Explain replacement rate in one line, focus on ZUS/IKE/IKZE and delaying retirement.",
+        },
+        { role: "system", content: contextLine },
         ...messages,
       ],
-      temperature: 0.4,
+      temperature: 0.3,
+      max_tokens: 350,
     };
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
-      const txt = await res.text();
-      return NextResponse.json({ reply: `OpenAI error: ${txt.slice(0, 200)}` }, { status: 200 });
+      const t = await res.text();
+      return NextResponse.json({ reply: `OpenAI error: ${t.slice(0, 200)}` }, { status: 200 });
     }
-
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "(No reply)";
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply: data.choices?.[0]?.message?.content || "(No reply)" });
   } catch (e: any) {
     return NextResponse.json({ reply: `Server error: ${e?.message || e}` }, { status: 200 });
   }
