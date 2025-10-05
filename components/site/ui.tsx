@@ -9,6 +9,10 @@ import Image from "next/image";
 
 import { loginAnon, loginGoogle, logout } from "@/lib/firebase";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
+
 
 /* ---------- ZUS palette (RGB → HEX) ---------- */
 const ZUS = {
@@ -180,21 +184,34 @@ export function AssistantWidget() {
 
           {/* Chat transcript */}
           <div className="p-4 max-h-[55vh] overflow-auto space-y-3 text-sm">
-            {messages.map((m, i) => (
+          {messages.map((m, i) => (
               <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
                 <div
                   className={`inline-block px-3 py-2 rounded-2xl ${
-                    m.role === "user"
-                      ? "text-white"
-                      : "bg-[#F1F5F9] text-[#001B2E]"
-                  }`}
-                  style={
-                    m.role === "user"
-                      ? { background: ZUS.blue }
-                      : undefined
-                  }
+                    m.role === "user" ? "bg-[#3F84D2] text-white" : "bg-[#F1F5F9] text-[#001B2E]"
+                  } max-w-[85%] whitespace-pre-wrap`}
                 >
-                  {m.content}
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeSanitize]}
+                    components={{
+                      a: ({ node, ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" className="underline" />
+                      ),
+                      code: ({ node, inline, className, children, ...props }:any) => (
+                        <code
+                          className={`rounded px-1 ${inline ? "bg-black/10" : "block p-2 bg-black/10"} ${
+                            className || ""
+                          }`}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      ),
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}

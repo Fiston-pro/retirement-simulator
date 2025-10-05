@@ -155,7 +155,6 @@ export default function ResultInner() {
       "Delaying retirement typically increases your monthly benefit by several percent per year.",
       "Including periods of illness can slightly reduce the final benefit due to lower contributions.",
       "Average pensions differ by region and career length.",
-      "Indexation and inflation mean real purchasing power can differ from nominal amounts.",
     ],
     []
   );
